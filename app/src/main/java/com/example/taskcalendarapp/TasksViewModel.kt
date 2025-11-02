@@ -13,12 +13,6 @@ class TasksViewModel : ViewModel() {
     private val _tasks = mutableStateListOf<Task>()
     val tasks: List<Task> = _tasks
 
-    init {
-        addTask("Complete homework")
-        addTask("Buy groceries")
-        addTask("Call dentist")
-    }
-
     fun addTask(title: String) {
         val newId = (_tasks.maxOfOrNull { it.id } ?: -1) + 1
         _tasks.add(Task(newId, title, false))
