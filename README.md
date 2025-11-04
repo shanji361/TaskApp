@@ -24,9 +24,9 @@
 
 ## How to Run
 
-```
+
 1. Clone this repository:
-   ```bash
+   ```
    git clone https://github.com/shanji361/TaskApp.git
    ```
 2. Open the project in Android Studio.
