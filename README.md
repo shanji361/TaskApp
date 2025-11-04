@@ -25,8 +25,14 @@
 ## How to Run
 
 ```
-git clone https://github.com/shanji361/TaskApp.git
-```
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/shanji361/TaskApp.git
+   ```
+2. Open the project in Android Studio.
+
+3. Run the app on an emulator or a physical Android device.
+   
 --- 
 
 ## Reference 
