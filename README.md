@@ -37,5 +37,6 @@
 
 ## Reference 
 
-AI helped with the calendar math used to calculate the grid cell count, where to put restoreState and launchSingleTop, nav bar icon suggestions, library imports, and in using the correct syntax for popUpTo(navController.graph.findStartDestination().id). AI also helped with the logic for generating a new note ID
-for addTask and addNote functions in ViewModel files. AI Misunderstandings: using rememberSaveable { mutableStateOf(rememberNavController()) } in place of rememberNavController(). 
+-AI helped with the calendar math used to calculate the grid cell count, where to put restoreState and launchSingleTop, nav bar icon suggestions, library imports, and in using the correct syntax for popUpTo(navController.graph.findStartDestination().id). AI also helped with the logic for generating a new note ID
+for addTask and addNote functions in ViewModel files. 
+-AI Misunderstandings: using rememberSaveable { mutableStateOf(rememberNavController()) } in place of rememberNavController(). 
