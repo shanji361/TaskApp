@@ -35,6 +35,11 @@ import com.example.taskcalendarapp.ui.theme.TaskCalendarAppTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
+import androidx.compose.animation.core.tween
+
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,16 +52,32 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Define the screens
-sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    object Notes : Screen("notes", "Notes", Icons.Default.Home)
-    object Tasks : Screen("tasks", "Tasks", Icons.Default.CheckCircle)
-    object Calendar : Screen("calendar", "Calendar", Icons.Default.DateRange)
 
-
-
+// added animated transition 
+enum class TransitionType {
+    SLIDE_LEFT,
+    SLIDE_RIGHT,
+    FADE,
+    SLIDE_UP,
+    NONE
 }
 
+sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    object Notes : Screen("notes?transition={transition}", "Notes", Icons.Default.Home) {
+        fun createRoute(transition: TransitionType = TransitionType.SLIDE_LEFT) =
+            "notes?transition=${transition.name}"
+    }
+    object Tasks : Screen("tasks?transition={transition}", "Tasks", Icons.Default.CheckCircle) {
+        fun createRoute(transition: TransitionType = TransitionType.FADE) =
+            "tasks?transition=${transition.name}"
+    }
+    object Calendar : Screen("calendar?transition={transition}", "Calendar", Icons.Default.DateRange) {
+        fun createRoute(transition: TransitionType = TransitionType.SLIDE_RIGHT) =
+            "calendar?transition=${transition.name}"
+    }
+
+    val baseRoute: String get() = route.substringBefore("?")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,17 +91,16 @@ fun MainScreen() {
 
     val screens = listOf(Screen.Notes, Screen.Tasks, Screen.Calendar)
 
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = when (currentDestination?.route) {
-                            Screen.Notes.route -> "Notes"
-                            Screen.Tasks.route -> "Tasks"
-                            Screen.Calendar.route -> "Calendar"
+                        text = when (currentDestination?.route?.substringBefore("?")) {
+                            "notes" -> "Notes"
+                            "tasks" -> "Tasks"
+                            "calendar" -> "Calendar"
                             else -> "App"
                         }
                     )
@@ -97,9 +117,15 @@ fun MainScreen() {
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
                         label = { Text(screen.title) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                        selected = currentDestination?.route?.startsWith(screen.baseRoute) == true,
                         onClick = {
-                            navController.navigate(screen.route) {
+                            val route = when (screen) {
+                                is Screen.Notes -> Screen.Notes.createRoute(TransitionType.SLIDE_LEFT)
+                                is Screen.Tasks -> Screen.Tasks.createRoute(TransitionType.FADE)
+                                is Screen.Calendar -> Screen.Calendar.createRoute(TransitionType.SLIDE_RIGHT)
+                            }
+
+                            navController.navigate(route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -114,35 +140,130 @@ fun MainScreen() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Notes.route,
+            startDestination = Screen.Notes.createRoute(TransitionType.FADE),
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(
                 route = Screen.Notes.route,
-                enterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
-                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) + fadeOut() }
+                arguments = listOf(
+                    navArgument("transition") {
+                        type = NavType.StringType
+                        defaultValue = TransitionType.SLIDE_LEFT.name
+                    }
+                ),
+                enterTransition = {
+                    // Read the transition from the entering screen (targetState)
+                    val transitionType = TransitionType.valueOf(
+                        targetState.arguments?.getString("transition") ?: TransitionType.SLIDE_LEFT.name
+                    )
+
+                    when (transitionType) {
+                        TransitionType.SLIDE_LEFT -> slideInHorizontally(
+                            initialOffsetX = { -it },
+                            animationSpec = tween(3000)
+                        )
+
+                        TransitionType.SLIDE_RIGHT -> slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(3000)
+                        )
+
+                        TransitionType.SLIDE_UP -> slideInVertically(
+                            initialOffsetY = { it },
+                            animationSpec = tween(3000)
+                        )
+                        TransitionType.FADE -> fadeIn(animationSpec = tween(3000))
+                        TransitionType.NONE -> EnterTransition.None
+                    }
+                },
+                exitTransition = {
+                    fadeOut(animationSpec = tween(3000))
+                }
             ) {
                 NotesScreen(viewModel = notesViewModel)
             }
 
             composable(
                 route = Screen.Tasks.route,
-                enterTransition = { fadeIn() },
-                exitTransition = { fadeOut() }
+                arguments = listOf(
+                    navArgument("transition") {
+                        type = NavType.StringType
+                        defaultValue = TransitionType.FADE.name
+                    }
+                ),
+                enterTransition = {
+                    val transitionType = TransitionType.valueOf(
+                        targetState.arguments?.getString("transition") ?: TransitionType.FADE.name
+                    )
+
+                    when (transitionType) {
+                        TransitionType.SLIDE_LEFT -> slideInHorizontally(
+                            initialOffsetX = { -it },
+                            animationSpec = tween(3000)
+                        )
+
+                        TransitionType.SLIDE_RIGHT -> slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(3000)
+                        )
+
+                        TransitionType.SLIDE_UP -> slideInVertically(
+                            initialOffsetY = { it },
+                            animationSpec = tween(3000)
+                        )
+                        TransitionType.FADE -> fadeIn(animationSpec = tween(3000))
+                        TransitionType.NONE -> EnterTransition.None
+                    }
+                },
+                exitTransition = {
+                    fadeOut(animationSpec = tween(3000))
+                }
             ) {
                 TasksScreen(viewModel = tasksViewModel)
             }
 
             composable(
                 route = Screen.Calendar.route,
-                enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
-                exitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+                arguments = listOf(
+                    navArgument("transition") {
+                        type = NavType.StringType
+                        defaultValue = TransitionType.SLIDE_RIGHT.name
+                    }
+                ),
+                enterTransition = {
+                    val transitionType = TransitionType.valueOf(
+                        targetState.arguments?.getString("transition") ?: TransitionType.SLIDE_RIGHT.name
+                    )
+
+                    when (transitionType) {
+                        TransitionType.SLIDE_LEFT -> slideInHorizontally(
+                            initialOffsetX = { -it },
+                            animationSpec = tween(3000)
+                        )
+                        TransitionType.SLIDE_RIGHT -> slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(3000)
+                        )
+
+                        TransitionType.SLIDE_UP -> slideInVertically(
+                            initialOffsetY = { it },
+                            animationSpec = tween(3000)
+                        )
+                        TransitionType.FADE -> fadeIn(animationSpec = tween(3000))
+                        TransitionType.NONE -> EnterTransition.None
+                    }
+                },
+                exitTransition = {
+                    fadeOut(animationSpec = tween(300))
+                }
             ) {
                 CalendarScreen()
             }
         }
     }
 }
+
+
 
 @Composable
 fun NotesScreen(viewModel: NotesViewModel) {
